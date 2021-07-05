@@ -13,7 +13,7 @@ int main(int argc, char **argv)
     void *op = LoadPE(ptr_data, &fm);
 
     if (op)
-        ((void (*)(void)) op)();
+        JUMP_PEOP(op);
     
     free_file_memory(&fm);
 
