@@ -19,6 +19,10 @@ void *memory_copy(void *dst, const void *src, size_t size);
 void *memory_set(void *dst, char c, size_t size);
 
 
+
+// reader.c
+char *read_file(const char *filename);
+
 // loader.c
 uint8_t check_file_format(WORD dos_sign, DWORD nt_sign);
 void write_sections(char *ImageBase, char *ptr_data, PIMAGE_SECTION_HEADER sections, WORD nsections);

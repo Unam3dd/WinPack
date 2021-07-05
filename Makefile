@@ -6,9 +6,10 @@ LFLAGS = /MACHINE:x86 /OUT:$(NAME)
 
 SRCS = src/main.c \
 	   src/utils/utils.c \
-	   src/loader/loader.c 
+	   src/loader/loader.c \
+	   src/reader/reader.c
 
-OBJS = main.obj utils.obj loader.obj
+OBJS = main.obj utils.obj loader.obj reader.obj
 
 all:
 	$(CC) $(CFLAGS) $(SRCS)

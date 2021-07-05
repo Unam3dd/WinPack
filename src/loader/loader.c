@@ -2,10 +2,9 @@
 
 ///////////////////////////////////////////////////////
 //
-//              LOADER (x86)
+//              PE Loader (x86)
 //
 ///////////////////////////////////////////////////////
-
 
 uint8_t check_file_format(WORD dos_sign, DWORD nt_sign)
 {
@@ -18,18 +17,19 @@ uint8_t check_file_format(WORD dos_sign, DWORD nt_sign)
     return (0);
 }
 
-// Write sections to the memory
 void write_sections(char *ImageBase, char *ptr_data, PIMAGE_SECTION_HEADER sections, WORD nsections)
 {
     char *addr = NULL;
 
     for (uint8_t i = 0; i < nsections; i++) {
+        // for each addr (ImageBase (Page memory) + RVA sections address)
         addr = (ImageBase + sections[i].VirtualAddress);
 
+        // copy data value in the page memory
         if (sections[i].SizeOfRawData)
-            memcpy(addr, ptr_data + sections[i].PointerToRawData, sections[i].SizeOfRawData);
+            memory_copy(addr, ptr_data + sections[i].PointerToRawData, sections[i].SizeOfRawData);
         else
-            memset(addr, 0, sections[i].Misc.VirtualSize);
+            memory_set(addr, 0, sections[i].Misc.VirtualSize);
     }
 }
 
@@ -42,17 +42,22 @@ void write_imports(char *ImageBase, PIMAGE_IMPORT_DESCRIPTOR import_descriptor)
 
     for (i = 0; import_descriptor[i].OriginalFirstThunk; i++) {
 
+        // Load library in memory ex : kernel32.dll
         lib = LoadLibraryA((ImageBase + import_descriptor[i].Name));
 
+        // IDT
         HINT_TABLE = (PIMAGE_THUNK_DATA) (ImageBase + import_descriptor[i].OriginalFirstThunk);
 
+        // IAT, our loader write on it
         IAT_TABLE = (PIMAGE_THUNK_DATA) (ImageBase + import_descriptor[i].FirstThunk);
 
         for (; HINT_TABLE[0].u1.AddressOfData; HINT_TABLE++, IAT_TABLE++) {
             
             function_addr = HINT_TABLE[0].u1.AddressOfData;
+
             by_name = (PIMAGE_IMPORT_BY_NAME) (ImageBase + function_addr);
 
+            // check if function has name or if has ordinal number
             IAT_TABLE[0].u1.Function = (function_addr & IMAGE_ORDINAL_FLAG) ? (DWORD)GetProcAddress(lib, (LPSTR)function_addr) : (DWORD)GetProcAddress(lib, (LPSTR)&by_name->Name); 
         }
     }
@@ -69,6 +74,7 @@ void write_relocations(char *ImageBase, PIMAGE_BASE_RELOCATION base_reloc, DWORD
         WORD *reloc = (WORD *)(base_reloc + 1);
 
         for (i = 0; i < size_blocks; i++) {
+            // 4 first bits is information of type, 12 last bits is the offset
             patch_addr = (PDWORD) (ImageBase + base_reloc->VirtualAddress + (reloc[i] & 0xfff));
 
             if ((reloc[i] >> 12) == IMAGE_REL_BASED_HIGHLOW)
@@ -113,7 +119,7 @@ void *LoadPE(char *ptr_data, file_memory_t *fm)
     
     ImageBase = (char *)VirtualAlloc(NULL, nt_hdr->OptionalHeader.SizeOfImage, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 
-    memcpy(ImageBase, ptr_data, nt_hdr->OptionalHeader.SizeOfHeaders);
+    memory_copy(ImageBase, ptr_data, nt_hdr->OptionalHeader.SizeOfHeaders);
 
     write_sections(ImageBase, ptr_data, sections, nt_hdr->FileHeader.NumberOfSections);
 
