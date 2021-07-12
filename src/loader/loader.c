@@ -6,7 +6,7 @@
 //
 ///////////////////////////////////////////////////////
 
-uint8_t check_file_format(WORD dos_sign, DWORD nt_sign)
+unsigned char check_file_format(WORD dos_sign, DWORD nt_sign)
 {
     if (dos_sign != IMAGE_DOS_SIGNATURE)
         return (1);
@@ -21,15 +21,15 @@ void write_sections(char *ImageBase, char *ptr_data, PIMAGE_SECTION_HEADER secti
 {
     char *addr = NULL;
 
-    for (uint8_t i = 0; i < nsections; i++) {
+    for (unsigned char i = 0; i < nsections; i++) {
         // for each addr (ImageBase (Page memory) + RVA sections address)
         addr = (ImageBase + sections[i].VirtualAddress);
 
         // copy data value in the page memory
         if (sections[i].SizeOfRawData)
-            memory_copy(addr, ptr_data + sections[i].PointerToRawData, sections[i].SizeOfRawData);
+            memcpy(addr, ptr_data + sections[i].PointerToRawData, sections[i].SizeOfRawData);
         else
-            memory_set(addr, 0, sections[i].Misc.VirtualSize);
+            memset(addr, 0, sections[i].Misc.VirtualSize);
     }
 }
 
@@ -105,7 +105,7 @@ void write_protections(char *ImageBase, PIMAGE_SECTION_HEADER sections, WORD nse
     }
 }
 
-void *LoadPE(char *ptr_data, file_memory_t *fm)
+void *LoadPE(char *ptr_data)
 {
     PIMAGE_DOS_HEADER dos_hdr = (PIMAGE_DOS_HEADER) ptr_data;
     PIMAGE_NT_HEADERS nt_hdr = (PIMAGE_NT_HEADERS) (((char *) dos_hdr) + dos_hdr->e_lfanew);
@@ -119,7 +119,7 @@ void *LoadPE(char *ptr_data, file_memory_t *fm)
     
     ImageBase = (char *)VirtualAlloc(NULL, nt_hdr->OptionalHeader.SizeOfImage, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 
-    memory_copy(ImageBase, ptr_data, nt_hdr->OptionalHeader.SizeOfHeaders);
+    memcpy(ImageBase, ptr_data, nt_hdr->OptionalHeader.SizeOfHeaders);
 
     write_sections(ImageBase, ptr_data, sections, nt_hdr->FileHeader.NumberOfSections);
 
@@ -135,11 +135,7 @@ void *LoadPE(char *ptr_data, file_memory_t *fm)
         write_relocations(ImageBase, base_reloc, delta);
     }
 
-
     write_protections(ImageBase, sections, nt_hdr->FileHeader.NumberOfSections, nt_hdr->OptionalHeader.SizeOfHeaders);
-
-    fm->ImageBase = ImageBase;
-    fm->ptr_data = ptr_data;
     
     return ((void *) (ImageBase + nt_hdr->OptionalHeader.AddressOfEntryPoint));
 }

@@ -1,23 +1,23 @@
 CC = cl.exe
 NAME = wpack
 LINK = link.exe
-CFLAGS = /c /TC /I includes
-LFLAGS = /MACHINE:x86 /OUT:$(NAME)
+CFLAGS = /c /I includes /EHsc
+FLAGS_C_CXX = /TP
+LFLAGS = /MACHINE:x86 /LIBPATH:lib LIEF.lib /OUT:
 
-SRCS = src/main.c \
-	   src/utils/utils.c \
-	   src/loader/loader.c \
-	   src/reader/reader.c
+CXX_FILES = src/main.cxx \
+			src/packer/packer.cxx \
+			src/cipher/cipher.c
 
-OBJS = main.obj utils.obj loader.obj reader.obj
+OBJS_PACK = main.obj packer.obj cipher.obj
 
 all:
-	$(CC) $(CFLAGS) $(SRCS)
-	$(LINK) $(OBJS) $(LFLAGS).exe
+	$(CC) $(CFLAGS) $(FLAGS_C_CXX) $(CXX_FILES)
+	$(LINK) $(OBJS_PACK) $(LFLAGS)$(NAME).exe
 
 clean:
-	del $(OBJS) /S /Q
+	del $(OBJS_PACK) /S /Q
 
 fclean:
-	del $(OBJS) /S /Q
+	del $(OBJS_PACK) /S /Q
 	del $(NAME).exe /S /Q
