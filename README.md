@@ -1,3 +1,3 @@
 # WinPack
-Packer written in C 
+Packer written in C /C++
 
